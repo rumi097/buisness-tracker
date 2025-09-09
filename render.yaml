@@ -1,4 +1,4 @@
-# render.yaml - Corrected with rootDir
+# render.yaml - Final Fix
 
 services:
   # 1. The MySQL Database Service
@@ -12,7 +12,8 @@ services:
     name: inventory-api
     runtime: docker
     region: singapore
-    rootDir: inventory-api # <-- CORRECTED
+    rootDir: inventory-api
+    # This line is required for Docker services
     healthCheckPath: /
     envVars:
       - fromService:
@@ -26,8 +27,8 @@ services:
   - type: web
     name: inventory-frontend
     runtime: static
-    region: singapore
-    rootDir: inventory-frontend # <-- CORRECTED
+    # region: singapore <-- REMOVED: Static sites don't have a region
+    rootDir: inventory-frontend
     buildCommand: npm install && npm run build
     staticPublishPath: build
     routes:
