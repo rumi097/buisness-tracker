@@ -1,18 +1,19 @@
-# render.yaml - Final Configuration with buildFilter
+# render.yaml - Final attempt with explicit root directories
 
 services:
   # 1. The React Frontend Service
   - type: web
     name: inventory-frontend
     runtime: static
-    # buildFilter explicitly sets the root directory for monorepos.
-    buildFilter:
-      paths:
-      - inventory-frontend/**
-      ignoredPaths:
-      - inventory-api/**
+    rootDir: inventory-frontend
+    # preBuildCommand will help debug by showing what files are present
+    preBuildCommand: ls -la
     buildCommand: npm install && npm run build
     publishDirectory: build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
   # 2. The PHP Backend API Service
   - type: web
