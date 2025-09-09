@@ -1,5 +1,3 @@
-# render.yaml - Final Version with envVar Fix
-
 databases:
   - name: business-db
     plan: free
@@ -43,9 +41,4 @@ services:
         fromDatabase:
           name: business-db
           property: database
-      # --- CORRECTED BLOCK ---
-      - key: FRONTEND_URL
-        fromService:
-          type: web # <-- FIX: Added the required 'type'
-          name: inventory-frontend
-          property: url 
+      
