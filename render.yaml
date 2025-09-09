@@ -1,19 +1,14 @@
-# render.yaml - Final attempt with explicit root directories
+# render.yaml - Final Diagnostic Version
 
 services:
-  # 1. The React Frontend Service
+  # 1. The React Frontend Service - SIMPLIFIED FOR DEBUGGING
   - type: web
     name: inventory-frontend
     runtime: static
-    rootDir: inventory-frontend
-    # preBuildCommand will help debug by showing what files are present
-    preBuildCommand: ls -la
-    buildCommand: npm install && npm run build
-    publishDirectory: build
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    # This command will run from the root and list every file and folder
+    buildCommand: ls -lR
+    # We expect this to fail, but it will give us the file paths we need
+    publishDirectory: .
 
   # 2. The PHP Backend API Service
   - type: web
