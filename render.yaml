@@ -1,0 +1,44 @@
+# render.yaml - Configuration for deploying the monorepo on Render
+
+services:
+  # 1. The MySQL Database Service
+  - type: pserv
+    name: business-db
+    runtime: mysql
+    region: singapore # You can choose a region closer to you if you prefer
+
+  # 2. The PHP Backend API Service
+  - type: web
+    name: inventory-api
+    runtime: docker
+    region: singapore
+    # Tells Render to only look inside this folder for the backend
+    rootDirectory: inventory-api
+    healthCheckPath: /
+    # Environment variables for the PHP app
+    envVars:
+      # These pull the connection details directly from the database service above
+      - fromService:
+          type: pserv
+          name: business-db
+          envVarKey: DATABASE_URL
+      # This sets the live frontend URL for the CORS header in db.php
+      - key: FRONTEND_URL
+        # This automatically uses the URL of your deployed frontend service below
+        value: ${{services.inventory-frontend.url}}
+
+  # 3. The React Frontend Service
+  - type: static
+    name: inventory-frontend
+    region: singapore
+    # Tells Render to only look inside this folder for the frontend
+    rootDirectory: inventory-frontend
+    # Build commands for a standard React app
+    buildCommand: npm install && npm run build
+    # The folder that contains the built static files
+    publishDirectory: build
+    # Rewrite rule for client-side routing (important for React Router)
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
