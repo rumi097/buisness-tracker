@@ -1,14 +1,14 @@
-# render.yaml - Correct plan configuration
+# render.yaml - Corrected build command path
 
 services:
   # 1. The React Frontend Service
   - type: web
     name: inventory-frontend
-    # plan: free <-- REMOVED: Static sites are free by default and don't need a plan.
     runtime: static
     rootDir: inventory-frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: build
+    # --- CORRECTED LINE ---
+    buildCommand: cd inventory-frontend && npm install && npm run build
+    publishDirectory: build
     routes:
       - type: rewrite
         source: /*
@@ -17,7 +17,7 @@ services:
   # 2. The PHP Backend API Service
   - type: web
     name: inventory-api
-    plan: free # <-- KEPT: This is required for the Docker web service.
+    plan: free
     runtime: docker
     region: singapore
     rootDir: inventory-api
