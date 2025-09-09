@@ -1,10 +1,10 @@
-# render.yaml - Explicitly setting the free plan
+# render.yaml - Correct plan configuration
 
 services:
   # 1. The React Frontend Service
   - type: web
     name: inventory-frontend
-    plan: free # <-- ADD THIS LINE
+    # plan: free <-- REMOVED: Static sites are free by default and don't need a plan.
     runtime: static
     rootDir: inventory-frontend
     buildCommand: npm install && npm run build
@@ -17,7 +17,7 @@ services:
   # 2. The PHP Backend API Service
   - type: web
     name: inventory-api
-    plan: free # <-- ADD THIS LINE
+    plan: free # <-- KEPT: This is required for the Docker web service.
     runtime: docker
     region: singapore
     rootDir: inventory-api
