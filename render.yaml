@@ -1,5 +1,3 @@
-# render.yaml - Final Fix
-
 services:
   # 1. The MySQL Database Service
   - type: pserv
@@ -13,21 +11,23 @@ services:
     runtime: docker
     region: singapore
     rootDir: inventory-api
-    # This line is required for Docker services
     healthCheckPath: /
     envVars:
-      - fromService:
+      - key: DATABASE_URL # This key is required by many frameworks
+        fromService:
           type: pserv
           name: business-db
-          envVarKey: DATABASE_URL
+          property: connectionString
       - key: FRONTEND_URL
-        value: ${{services.inventory-frontend.url}}
+        fromService:
+          type: web
+          name: inventory-frontend
+          property: url
 
   # 3. The React Frontend Service
   - type: web
     name: inventory-frontend
     runtime: static
-    # region: singapore <-- REMOVED: Static sites don't have a region
     rootDir: inventory-frontend
     buildCommand: npm install && npm run build
     staticPublishPath: build
