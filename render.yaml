@@ -1,8 +1,4 @@
-databases:
-  - name: business-db
-    plan: free
-    databaseName: business_db
-    user: db_user
+# render.yaml - Using an external Neon database
 
 services:
   # 1. The React Frontend Service
@@ -25,20 +21,7 @@ services:
     rootDir: inventory-api
     healthCheckPath: /
     envVars:
-      - key: DB_HOST
-        fromDatabase:
-          name: business-db
-          property: host
-      - key: DB_USER
-        fromDatabase:
-          name: business-db
-          property: user
-      - key: DB_PASS
-        fromDatabase:
-          name: business-db
-          property: password
-      - key: DB_NAME
-        fromDatabase:
-          name: business-db
-          property: database
-      
+      # This key will now hold the connection string from Neon
+      - key: DATABASE_URL
+        # Set this to 'sync: false' so it doesn't get overwritten
+        sync: false
