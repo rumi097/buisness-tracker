@@ -1,13 +1,11 @@
-# render.yaml - Final Corrected Version
+# render.yaml - Final Version with envVar Fix
 
-# Defines the managed database service first
 databases:
   - name: business-db
-    plan: free # Use the free tier for your database
-    databaseName: business_db # The name of the database inside the instance
-    user: db_user # The username for the database
+    plan: free
+    databaseName: business_db
+    user: db_user
 
-# Defines the web services that will use the database
 services:
   # 1. The React Frontend Service
   - type: web
@@ -29,7 +27,6 @@ services:
     rootDir: inventory-api
     healthCheckPath: /
     envVars:
-      # These environment variables connect your PHP app to the database
       - key: DB_HOST
         fromDatabase:
           name: business-db
@@ -46,8 +43,9 @@ services:
         fromDatabase:
           name: business-db
           property: database
-      # This environment variable tells your API the frontend's live URL for CORS
+      # --- CORRECTED BLOCK ---
       - key: FRONTEND_URL
         fromService:
+          type: web # <-- FIX: Added the required 'type'
           name: inventory-frontend
-          property: url
+          property: url 
