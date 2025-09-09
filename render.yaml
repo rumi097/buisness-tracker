@@ -1,15 +1,11 @@
-# render.yaml - Final build path and Node version
+# render.yaml - Final build path correction
 
 services:
   # 1. The React Frontend Service
   - type: web
     name: inventory-frontend
     runtime: static
-    envVars:
-      # --- CORRECTED SYNTAX ---
-      - key: NODE_VERSION
-        value: 20
-    # The buildCommand now controls the directory.
+    # buildCommand now sets the directory and then builds. rootDir is removed.
     buildCommand: cd inventory-frontend && npm install && npm run build
     # The publish directory is relative to the repository root.
     publishDirectory: inventory-frontend/build
@@ -24,7 +20,7 @@ services:
     plan: free
     runtime: docker
     region: singapore
-    rootDir: inventory-api
+    rootDir: inventory-api # This is correct for Docker services
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
