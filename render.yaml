@@ -1,9 +1,10 @@
-# render.yaml - Using an external Neon database
+# render.yaml - Explicitly setting the free plan
 
 services:
   # 1. The React Frontend Service
   - type: web
     name: inventory-frontend
+    plan: free # <-- ADD THIS LINE
     runtime: static
     rootDir: inventory-frontend
     buildCommand: npm install && npm run build
@@ -16,12 +17,11 @@ services:
   # 2. The PHP Backend API Service
   - type: web
     name: inventory-api
+    plan: free # <-- ADD THIS LINE
     runtime: docker
     region: singapore
     rootDir: inventory-api
     healthCheckPath: /
     envVars:
-      # This key will now hold the connection string from Neon
       - key: DATABASE_URL
-        # Set this to 'sync: false' so it doesn't get overwritten
         sync: false
