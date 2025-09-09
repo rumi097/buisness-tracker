@@ -5,7 +5,7 @@ services:
   - type: web
     name: inventory-frontend
     runtime: static
-    # rootDir has been removed to allow buildCommand to set the context.
+    # rootDir is removed. The buildCommand now controls the directory.
     buildCommand: cd inventory-frontend && npm install && npm run build
     # The publish directory is relative to the repository root.
     publishDirectory: inventory-frontend/build
@@ -20,7 +20,7 @@ services:
     plan: free
     runtime: docker
     region: singapore
-    rootDir: inventory-api
+    rootDir: inventory-api # rootDir is correct for Docker services
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
