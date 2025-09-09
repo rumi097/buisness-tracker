@@ -5,8 +5,8 @@ services:
   - type: web
     name: inventory-frontend
     runtime: static
-    # Add a specific Node.js version
     envVars:
+      # --- CORRECTED SYNTAX ---
       - key: NODE_VERSION
         value: 20
     # The buildCommand now controls the directory.
