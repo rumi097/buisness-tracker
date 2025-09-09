@@ -1,14 +1,14 @@
-# render.yaml - Reverted build command
+# render.yaml - Final build path correction
 
 services:
   # 1. The React Frontend Service
   - type: web
     name: inventory-frontend
     runtime: static
-    rootDir: inventory-frontend
-    # --- CORRECTED LINE ---
-    buildCommand: npm install && npm run build
-    publishDirectory: build
+    # rootDir has been removed to allow buildCommand to set the context.
+    buildCommand: cd inventory-frontend && npm install && npm run build
+    # The publish directory is relative to the repository root.
+    publishDirectory: inventory-frontend/build
     routes:
       - type: rewrite
         source: /*
