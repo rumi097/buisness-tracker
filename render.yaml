@@ -1,4 +1,4 @@
-# render.yaml - Corrected build command path
+# render.yaml - Reverted build command
 
 services:
   # 1. The React Frontend Service
@@ -7,7 +7,7 @@ services:
     runtime: static
     rootDir: inventory-frontend
     # --- CORRECTED LINE ---
-    buildCommand: cd inventory-frontend && npm install && npm run build
+    buildCommand: npm install && npm run build
     publishDirectory: build
     routes:
       - type: rewrite
