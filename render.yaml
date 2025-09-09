@@ -1,4 +1,4 @@
-# render.yaml - Corrected Configuration
+# render.yaml - Corrected with rootDir
 
 services:
   # 1. The MySQL Database Service
@@ -12,7 +12,7 @@ services:
     name: inventory-api
     runtime: docker
     region: singapore
-    rootDirectory: inventory-api
+    rootDir: inventory-api # <-- CORRECTED
     healthCheckPath: /
     envVars:
       - fromService:
@@ -22,15 +22,14 @@ services:
       - key: FRONTEND_URL
         value: ${{services.inventory-frontend.url}}
 
-  # 3. The React Frontend Service (CORRECTED)
-  - type: web # <-- CHANGE: Type is 'web'
+  # 3. The React Frontend Service
+  - type: web
     name: inventory-frontend
-    runtime: static # <-- CHANGE: Runtime is 'static'
+    runtime: static
     region: singapore
-    rootDirectory: inventory-frontend
+    rootDir: inventory-frontend # <-- CORRECTED
     buildCommand: npm install && npm run build
-    staticPublishPath: build # <-- CHANGE: Use 'staticPublishPath'
-    # Rewrite rule for client-side routing
+    staticPublishPath: build
     routes:
       - type: rewrite
         source: /*
