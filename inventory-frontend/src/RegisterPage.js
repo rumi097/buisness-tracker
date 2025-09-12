@@ -20,8 +20,19 @@ function RegisterPage({ apiUrl }) {
         setIsLoading(true);
         setError('');
         setMessage('');
+
+        // Use the full API URL from the environment variable set in Vercel.
+        const liveApiUrl = process.env.REACT_APP_API_URL;
+        
+        // A check to ensure the environment variable is loaded.
+        if (!liveApiUrl) {
+            setError("API URL is not configured. Please contact support.");
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            await axios.post(`${apiUrl}/auth.php?action=register`, formData);
+            await axios.post(`${liveApiUrl}/auth.php?action=register`, formData);
             setMessage('Registration successful! Redirecting to login...');
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
