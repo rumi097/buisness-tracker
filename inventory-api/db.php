@@ -17,24 +17,22 @@ $database_url = getenv('DATABASE_URL');
 $conn = null; // Initialize connection variable
 
 if ($database_url) {
-    // If the URL is present (on Render), parse it for PostgreSQL credentials
-    $url_parts = parse_url($database_url);
-    $host = $url_parts['host'];
-    $port = $url_parts['port'];
-    $user = $url_parts['user'];
-    $pass = $url_parts['pass'];
-    $dbname = ltrim($url_parts['path'], '/');
+    // --- FIX: Use a regular expression to reliably parse the Neon URL ---
+    preg_match("/postgres:\/\/(.*):(.*)@(.*):(.*)\/(.*)/", $database_url, $matches);
+    $user = $matches[1];
+    $pass = $matches[2];
+    $host = $matches[3];
+    $port = $matches[4];
+    $dbname = $matches[5];
     
-    // Create the connection string specifically for pg_connect
+    // Create the connection string for pg_connect
     $conn_str = "host=$host port=$port dbname=$dbname user=$user password=$pass";
     
     // Connect to the PostgreSQL database
     $conn = pg_connect($conn_str);
 
 } else {
-    // If running locally on XAMPP (MySQL), use your local credentials
-    // Note: You'll need to update your local PHP files to use pg_ functions
-    // or create a condition to use mysqli functions here.
+    // Fallback for local development
     $servername = "localhost";
     $username = "root";
     $password = "";
@@ -45,8 +43,7 @@ if ($database_url) {
 // Check the connection for errors
 if (!$conn) {
     http_response_code(500);
-    // Use pg_last_error() for PostgreSQL errors
-    echo json_encode(["error" => "Database connection failed: " . pg_last_error()]);
+    echo json_encode(["error" => "Database connection failed."]);
     exit();
 }
 ?>
