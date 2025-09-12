@@ -1,5 +1,5 @@
 <?php
-include 'db.php';
+include 'db.php'; // Your PostgreSQL connection
 
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $user_id = 0;
@@ -19,26 +19,31 @@ if ($user_id <= 0) {
 
 switch ($action) {
     case 'get_types':
-        $stmt = $conn->prepare("SELECT id, type_name FROM product_types WHERE user_id = ? ORDER BY type_name ASC");
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        echo json_encode($result);
-        $stmt->close();
+        // Use a numbered placeholder ($1) for PostgreSQL
+        $sql = "SELECT id, type_name FROM product_types WHERE user_id = $1 ORDER BY type_name ASC";
+        
+        pg_prepare($conn, "get_types_query", $sql);
+        $result = pg_execute($conn, "get_types_query", array($user_id));
+        
+        $types = pg_fetch_all($result) ?: []; // Return empty array if no results
+        echo json_encode($types);
         break;
 
     case 'add_type':
         if ($data && !empty($data->type_name)) {
-            $stmt = $conn->prepare("INSERT INTO product_types (user_id, type_name) VALUES (?, ?)");
-            $stmt->bind_param("is", $user_id, $data->type_name);
-            if ($stmt->execute()) {
-                $new_id = $conn->insert_id;
+            // Use RETURNING id to get the new ID back from the insert
+            $sql = "INSERT INTO product_types (user_id, type_name) VALUES ($1, $2) RETURNING id";
+            
+            pg_prepare($conn, "add_type_query", $sql);
+            $result = pg_execute($conn, "add_type_query", array($user_id, $data->type_name));
+            
+            if ($result) {
+                $new_id = pg_fetch_assoc($result)['id'];
                 echo json_encode(["message" => "Type added successfully.", "new_type" => ["id" => $new_id, "type_name" => $data->type_name]]);
             } else {
                 http_response_code(400);
                 echo json_encode(["message" => "Failed to add type. It might already exist."]);
             }
-            $stmt->close();
         } else {
             http_response_code(400);
             echo json_encode(["message" => "Type name cannot be empty."]);
@@ -46,5 +51,5 @@ switch ($action) {
         break;
 }
 
-$conn->close();
+pg_close($conn);
 ?>

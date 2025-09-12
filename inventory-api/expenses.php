@@ -1,5 +1,5 @@
 <?php
-include 'db.php';
+include 'db.php'; // Your PostgreSQL database connection
 
 $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
 $user_id = 0;
@@ -29,50 +29,50 @@ switch ($action) {
                 exit();
             }
 
-            $stmt = $conn->prepare("INSERT INTO expenses (user_id, title, amount) VALUES (?, ?, ?)");
-            $stmt->bind_param("isd", $user_id, $title, $amount);
+            // Use numbered placeholders for PostgreSQL
+            $sql = "INSERT INTO expenses (user_id, title, amount) VALUES ($1, $2, $3)";
+            pg_prepare($conn, "add_expense_query", $sql);
+            $result = pg_execute($conn, "add_expense_query", array($user_id, $title, $amount));
             
-            if ($stmt->execute()) {
+            if ($result) {
                 echo json_encode(["message" => "Expense added successfully."]);
             } else {
                 http_response_code(500);
                 echo json_encode(["message" => "Failed to add expense."]);
             }
-            $stmt->close();
         }
         break;
 
     case 'get_summary':
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-            // Daily Total
-            $daily_stmt = $conn->prepare("SELECT SUM(amount) as total FROM expenses WHERE user_id = ? AND DATE(expense_date) = CURDATE()");
-            $daily_stmt->bind_param("i", $user_id);
-            $daily_stmt->execute();
-            $daily_total = $daily_stmt->get_result()->fetch_assoc()['total'] ?? 0;
-            $daily_stmt->close();
+            // Helper function to execute sum queries
+            function get_total_expense($conn, $user_id, $interval_sql) {
+                $sql = "SELECT SUM(amount) as total FROM expenses WHERE user_id = $1 AND expense_date >= $2 AND expense_date < $3";
+                pg_prepare($conn, "sum_query_" . uniqid(), $sql);
+                $result = pg_execute($conn, "sum_query_" . uniqid(), array($user_id, $interval_sql['start'], $interval_sql['end']));
+                return pg_fetch_assoc($result)['total'] ?? 0;
+            }
 
-            // Weekly Total
-            $weekly_stmt = $conn->prepare("SELECT SUM(amount) as total FROM expenses WHERE user_id = ? AND WEEK(expense_date) = WEEK(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())");
-            $weekly_stmt->bind_param("i", $user_id);
-            $weekly_stmt->execute();
-            $weekly_total = $weekly_stmt->get_result()->fetch_assoc()['total'] ?? 0;
-            $weekly_stmt->close();
+            // Calculate date ranges in PHP for portability
+            $today = new DateTime();
+            $daily_interval = ['start' => $today->format('Y-m-d'), 'end' => $today->modify('+1 day')->format('Y-m-d')];
             
-            // Monthly Total
-            $monthly_stmt = $conn->prepare("SELECT SUM(amount) as total FROM expenses WHERE user_id = ? AND DATE_FORMAT(expense_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')");
-            $monthly_stmt->bind_param("i", $user_id);
-            $monthly_stmt->execute();
-            $monthly_total = $monthly_stmt->get_result()->fetch_assoc()['total'] ?? 0;
-            $monthly_stmt->close();
+            $monday = (new DateTime())->modify('monday this week');
+            $next_monday = (clone $monday)->modify('+1 week');
+            $weekly_interval = ['start' => $monday->format('Y-m-d'), 'end' => $next_monday->format('Y-m-d')];
+            
+            $first_of_month = (new DateTime())->modify('first day of this month');
+            $first_of_next_month = (clone $first_of_month)->modify('+1 month');
+            $monthly_interval = ['start' => $first_of_month->format('Y-m-d'), 'end' => $first_of_next_month->format('Y-m-d')];
 
             echo json_encode([
-                "daily" => $daily_total,
-                "weekly" => $weekly_total,
-                "monthly" => $monthly_total
+                "daily" => get_total_expense($conn, $user_id, $daily_interval),
+                "weekly" => get_total_expense($conn, $user_id, $weekly_interval),
+                "monthly" => get_total_expense($conn, $user_id, $monthly_interval)
             ]);
         }
         break;
 }
 
-$conn->close();
+pg_close($conn);
 ?>

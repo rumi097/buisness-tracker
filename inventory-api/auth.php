@@ -1,10 +1,10 @@
 <?php
-include 'db.php';
+include 'db.php'; // Your PostgreSQL database connection file
 
 $data = json_decode(file_get_contents("php://input"));
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
-// --- ACTION: REGISTER (Directly, no OTP) ---
+// --- ACTION: REGISTER ---
 if ($action == 'register') {
     $username = $data->username;
     $password = password_hash($data->password, PASSWORD_BCRYPT);
@@ -12,28 +12,37 @@ if ($action == 'register') {
     $email = $data->email;
     $location = $data->location;
 
-    $sql = "INSERT INTO users (username, password, store_name, email, location) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssss", $username, $password, $store_name, $email, $location);
+    // Use numbered placeholders ($1, $2, etc.) for PostgreSQL
+    $sql = "INSERT INTO users (username, password, store_name, email, location) VALUES ($1, $2, $3, $4, $5)";
+    
+    // Prepare the statement with a unique name
+    $stmt = pg_prepare($conn, "register_user", $sql);
+    
+    // Execute the prepared statement with an array of parameters
+    $result = pg_execute($conn, "register_user", array($username, $password, $store_name, $email, $location));
 
-    if ($stmt->execute()) {
+    if ($result) {
         echo json_encode(["message" => "User registered successfully."]);
     } else {
         http_response_code(400);
-        echo json_encode(["message" => "Registration failed. Username or email might already be taken.", "error" => $stmt->error]);
+        // Get the specific PostgreSQL error message
+        echo json_encode(["message" => "Registration failed. Username or email might already be taken.", "error" => pg_last_error($conn)]);
     }
-    $stmt->close();
 }
 
-// --- ACTION: LOGIN (No changes) ---
+// --- ACTION: LOGIN ---
 if ($action == 'login') {
     $username = $data->username;
     $password = $data->password;
-    $sql = "SELECT id, password, store_name FROM users WHERE username = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $user = $stmt->get_result()->fetch_assoc();
+
+    // Use a numbered placeholder ($1) for the username
+    $sql = "SELECT id, password, store_name FROM users WHERE username = $1";
+    
+    $stmt = pg_prepare($conn, "login_user", $sql);
+    $result = pg_execute($conn, "login_user", array($username));
+    
+    // Fetch the single user row
+    $user = pg_fetch_assoc($result);
 
     if ($user && password_verify($password, $user['password'])) {
         echo json_encode(["message" => "Login successful.", "user_id" => $user['id'], "store_name" => $user['store_name']]);
@@ -41,8 +50,7 @@ if ($action == 'login') {
         http_response_code(401);
         echo json_encode(["message" => "Invalid credentials."]);
     }
-    $stmt->close();
 }
 
-$conn->close();
+pg_close($conn);
 ?>

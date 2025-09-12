@@ -1,70 +1,93 @@
 <?php
-include 'db.php';
+include 'db.php'; // Your PostgreSQL database connection file
 
+// --- Input Validation ---
 $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 $period = isset($_GET['period']) ? $_GET['period'] : 'daily'; // daily, weekly, monthly
 
 if ($user_id <= 0) {
     http_response_code(403);
-    exit("User not specified.");
+    echo json_encode(['error' => 'User not specified.']);
+    exit();
 }
 
-$period_condition = "";
+// --- Date Range Calculation ---
+// Calculate the date range in PHP. This is more portable than using database-specific functions.
+$start_date = new DateTime();
+$end_date = new DateTime();
+
 switch ($period) {
     case 'weekly':
-        $period_condition = "AND WEEK(sale_date) = WEEK(CURDATE()) AND YEAR(sale_date) = YEAR(CURDATE())";
+        // Set the start to the Monday of the current week.
+        $start_date->modify('monday this week');
         break;
     case 'monthly':
-        $period_condition = "AND DATE_FORMAT(sale_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
-        break;
-    default: // daily
-        $period_condition = "AND DATE(sale_date) = CURDATE()";
+        // Set the start to the first day of the current month.
+        $start_date->modify('first day of this month');
         break;
 }
 
-// Chart Data: Sum of quantities sold for each product in the period
-$chart_sql = "SELECT product_name, SUM(quantity_sold) as total_quantity 
-              FROM sales_transactions 
-              WHERE user_id = ? $period_condition 
-              GROUP BY product_name 
-              ORDER BY total_quantity DESC";
-$chart_stmt = $conn->prepare($chart_sql);
-$chart_stmt->bind_param("i", $user_id);
-$chart_stmt->execute();
-$chart_data = $chart_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-$chart_stmt->close();
+// Format dates for the SQL query.
+$start_date_str = $start_date->format('Y-m-d 00:00:00');
+$end_date_str = $end_date->format('Y-m-d 23:59:59');
 
-// Highest Selling Product
-$highest_sql = "SELECT product_name, SUM(quantity_sold) as total_quantity 
-                FROM sales_transactions 
-                WHERE user_id = ? $period_condition 
-                GROUP BY product_name 
-                ORDER BY total_quantity DESC 
-                LIMIT 1";
-$highest_stmt = $conn->prepare($highest_sql);
-$highest_stmt->bind_param("i", $user_id);
-$highest_stmt->execute();
-$highest_product = $highest_stmt->get_result()->fetch_assoc();
-$highest_stmt->close();
 
-// Lowest Selling Product
-$lowest_sql = "SELECT product_name, SUM(quantity_sold) as total_quantity 
-               FROM sales_transactions 
-               WHERE user_id = ? $period_condition 
-               GROUP BY product_name 
-               ORDER BY total_quantity ASC 
-               LIMIT 1";
-$lowest_stmt = $conn->prepare($lowest_sql);
-$lowest_stmt->bind_param("i", $user_id);
-$lowest_stmt->execute();
-$lowest_product = $lowest_stmt->get_result()->fetch_assoc();
-$lowest_stmt->close();
+// --- Database Query (Optimized for PostgreSQL) ---
+// We use numbered placeholders ($1, $2, $3) for PostgreSQL parameters.
+$sql = "SELECT 
+            product_name, 
+            SUM(quantity_sold) as total_quantity 
+        FROM 
+            sales_transactions 
+        WHERE 
+            user_id = $1 AND sale_date BETWEEN $2 AND $3
+        GROUP BY 
+            product_name 
+        ORDER BY 
+            total_quantity DESC";
 
+try {
+    // Prepare and execute the query using pgsql functions
+    $stmt = pg_prepare($conn, "analytics_query", $sql);
+    $result = pg_execute($conn, "analytics_query", array($user_id, $start_date_str, $end_date_str));
+    
+    if (!$result) {
+        throw new Exception(pg_last_error($conn));
+    }
+
+    $sales_data = pg_fetch_all($result);
+    // If there are no results, pg_fetch_all returns false. Convert to an empty array.
+    if ($sales_data === false) {
+        $sales_data = [];
+    }
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database query failed: ' . $e->getMessage()]);
+    exit();
+}
+
+
+// --- Data Processing (in PHP) ---
+// This logic remains the same.
+
+// The chart data is the full result set.
+$chart_data = $sales_data;
+
+// The highest selling product is the first item.
+$highest_product = $sales_data[0] ?? null;
+
+// The lowest selling product is the last item.
+$lowest_product = end($sales_data) ?: null;
+
+
+// --- Final Output ---
+// Send the final data as a JSON response.
 echo json_encode([
     'chartData' => $chart_data,
     'highestProduct' => $highest_product,
     'lowestProduct' => $lowest_product
 ]);
 
-$conn->close();
+pg_close($conn);
 ?>
