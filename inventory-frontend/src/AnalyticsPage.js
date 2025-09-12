@@ -5,22 +5,27 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-function AnalyticsPage({ user, apiUrl }) {
+function AnalyticsPage({ user }) { // Removed unused apiUrl prop
     const [period, setPeriod] = useState('daily');
     const [analyticsData, setAnalyticsData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const fetchAnalytics = useCallback(async () => {
+        if (!user?.id) return;
         setLoading(true);
+
+        // Get the live API URL from the environment variable set in Vercel
+        const liveApiUrl = process.env.REACT_APP_API_URL;
+
         try {
-            const response = await axios.get(`${apiUrl}/analytics.php?user_id=${user.id}&period=${period}`);
+            const response = await axios.get(`${liveApiUrl}/analytics.php?user_id=${user.id}&period=${period}`);
             setAnalyticsData(response.data);
         } catch (error) {
             console.error("Error fetching analytics:", error);
         } finally {
             setLoading(false);
         }
-    }, [user.id, apiUrl, period]);
+    }, [user.id, period]);
 
     useEffect(() => {
         fetchAnalytics();

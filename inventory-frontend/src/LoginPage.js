@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
-function LoginPage({ setUser, apiUrl }) {
+function LoginPage({ setUser }) { // Removed unused apiUrl prop
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -10,8 +10,19 @@ function LoginPage({ setUser, apiUrl }) {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError(''); // Clear previous errors
+
+        // Get the live API URL from the environment variable set in Vercel
+        const liveApiUrl = process.env.REACT_APP_API_URL;
+
+        // Check to ensure the environment variable is loaded
+        if (!liveApiUrl) {
+            setError("API URL is not configured. Please contact support.");
+            return;
+        }
+
         try {
-            const response = await axios.post(`${apiUrl}/auth.php?action=login`, { username, password });
+            const response = await axios.post(`${liveApiUrl}/auth.php?action=login`, { username, password });
             const userData = { id: response.data.user_id, username, store_name: response.data.store_name };
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
