@@ -1,6 +1,15 @@
 <?php
+// Get the live frontend URL from an environment variable set in Render
+$frontend_url = getenv('FRONTEND_URL');
+
+// If the variable isn't set (e.g., local testing), fallback to a default
+if (!$frontend_url) {
+    // This allows your local React dev server to connect
+    $frontend_url = 'http://localhost:3000';
+}
+
 // Set CORS headers to allow your React frontend to connect
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: " . $frontend_url);
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
